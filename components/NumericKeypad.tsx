@@ -196,9 +196,9 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({
   const hasOperator = ['+', '-', '*', '/'].some(op => display.includes(op));
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.08)] pb-[calc(env(safe-area-inset-bottom)+3.5rem)]">
-      {/* Display Area */}
-      <div className="flex-1 flex flex-col justify-end items-end px-8 pb-3 pt-3 border-b border-gray-50 bg-white rounded-t-3xl">
+    <div className="flex flex-col bg-white rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.08)] pb-[calc(env(safe-area-inset-bottom)+3.5rem)]">
+      {/* Display Area - Fixed padding, no flex-1 to prevent stretching */}
+      <div className="flex flex-col justify-end items-end px-8 py-5 border-b border-gray-50 bg-white rounded-t-3xl">
         <div className="text-gray-400 text-sm font-mono h-5 mb-1 opacity-70">
            {hasOperator ? `= ${centsToDecimal(currentResult)}` : ''}
         </div>

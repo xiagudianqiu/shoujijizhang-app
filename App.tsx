@@ -495,7 +495,8 @@ const App = () => {
 
       return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex flex-col justify-end">
-          <div className="bg-white rounded-t-[2rem] max-h-[92dvh] h-full flex flex-col overflow-hidden animate-slide-up shadow-2xl">
+          {/* Removed h-full to allow shrink-wrap, kept max-h for scroll protection */}
+          <div className="bg-white rounded-t-[2rem] max-h-[90dvh] flex flex-col overflow-hidden animate-slide-up shadow-2xl">
             <div className="pt-4 px-5 pb-2">
               <div className="flex justify-center mb-2">
                   {editingTxId ? (
@@ -603,7 +604,8 @@ const App = () => {
                 </div>
             )}
 
-            <div className="flex-1 bg-white relative">
+            {/* Removed flex-1 to allow keypad to determine its own height */}
+            <div className="bg-white relative">
                <NumericKeypad 
                   key={editingOcrIndex !== null ? `edit-${editingOcrIndex}` : (editingTxId ? `edit-tx-${editingTxId}` : 'new')} 
                   initialValue={initialKeypadValue}
