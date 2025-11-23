@@ -1,13 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TransactionType } from "../types";
 
-// Fix for TypeScript error: TS2591 Cannot find name 'process'
-declare const process: {
-  env: {
-    API_KEY: string;
-  }
-};
-
 // Helper to get the AI instance
 const getGenAI = () => {
   // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
@@ -91,7 +84,7 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
             1. 返回一个包含所有交易的 JSON 数组。
             2. 提取金额（单位：分）。
             3. 判断类型：EXPENSE（支出）或 INCOME（收入）。
-            4. 推断分类：Food (餐饮), Transport (交通), Shopping (购物), Housing (居住), Salary (薪资), Investment (投资), Other (其他)。
+            4. 推断分类：Food (餐饮), Transport (交通), Shopping (购物), Housing (居住), Salary (薪资), Investment (投资), Other (其他).
             5. 提取商户名或关键描述作为 note (例如: "肯德基", "滴滴出行")。
             6. 如果截图包含日期信息，提取为 "YYYY-MM-DD" 格式字符串。
             7. 如果是退款，金额设为负数，类型仍为 EXPENSE，tags包含'退款'。
