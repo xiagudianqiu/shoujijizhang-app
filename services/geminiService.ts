@@ -84,7 +84,7 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
             }
         },
         {
-            text: `你是一个财务助手。请分析这张图片（支付截图、银行账单或小票），提取其中所有的交易记录。
+            text: `你是一个财务助手。请分析这张图片（可能是微信/支付宝的账单列表、银行流水、小票或单笔交易截图），提取其中所有的交易记录。
             
             要求：
             1. 返回一个包含所有交易的 JSON 数组。
@@ -93,8 +93,8 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
             4. 推断分类：Food (餐饮), Transport (交通), Shopping (购物), Housing (居住), Salary (薪资), Investment (投资), Other (其他).
             5. 提取商户名或关键描述作为 note (例如: "肯德基", "滴滴出行")。
             6. 提取日期和时间:
-               - 如果包含完整时间，格式为 "YYYY-MM-DD HH:mm"。
-               - 如果只有日期，格式为 "YYYY-MM-DD"。
+               - 格式统一为 "YYYY-MM-DD HH:mm" 或 "YYYY-MM-DD"。
+               - 如果图片显示 "昨天"、"今天" 等相对时间，请结合当前时间推算为具体日期。
                - 如果没有年份，默认使用当前年份。
             7. 如果是退款，金额设为负数，类型仍为 EXPENSE，tags包含'退款'。
             8. 如果包含'OCR'或'识别'等字眼，忽略它们。
@@ -114,7 +114,7 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
                 category: { type: Type.STRING },
                 note: { type: Type.STRING },
                 tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-                date: { type: Type.STRING, description: "YYYY-MM-DD HH:mm or YYYY-MM-DD" },
+                date: { type: Type.STRING, description: "YYYY-MM-DD HH:mm" },
                 confidence: { type: Type.NUMBER }
             },
             required: ["amount", "type", "category", "note"]

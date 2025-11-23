@@ -666,9 +666,9 @@ const App = () => {
                                                         </span>
                                                     ))}
                                                     {candidate.date && (
-                                                        <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 flex items-center gap-1">
+                                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 flex items-center gap-1 font-mono">
                                                              <Calendar size={10} />
-                                                             {candidate.date.length > 10 ? candidate.date.substring(5, 16).replace('T', ' ') : candidate.date.substring(5)}
+                                                             {candidate.date.replace('T', ' ')}
                                                         </span>
                                                     )}
                                                 </div>
