@@ -20,7 +20,7 @@ export interface NLPResult {
   category: string;
   note: string;
   tags?: string[];
-  date?: string; // YYYY-MM-DD or similar
+  date?: string; // YYYY-MM-DD or YYYY-MM-DD HH:mm
   confidence: number;
 }
 
@@ -92,7 +92,10 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
             3. 判断类型：EXPENSE（支出）或 INCOME（收入）。
             4. 推断分类：Food (餐饮), Transport (交通), Shopping (购物), Housing (居住), Salary (薪资), Investment (投资), Other (其他).
             5. 提取商户名或关键描述作为 note (例如: "肯德基", "滴滴出行")。
-            6. 如果截图包含日期信息，提取为 "YYYY-MM-DD" 格式字符串。
+            6. 提取日期和时间:
+               - 如果包含完整时间，格式为 "YYYY-MM-DD HH:mm"。
+               - 如果只有日期，格式为 "YYYY-MM-DD"。
+               - 如果没有年份，默认使用当前年份。
             7. 如果是退款，金额设为负数，类型仍为 EXPENSE，tags包含'退款'。
             8. 如果包含'OCR'或'识别'等字眼，忽略它们。
             9. 如果无法识别任何财务信息，返回空数组。
@@ -111,7 +114,7 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
                 category: { type: Type.STRING },
                 note: { type: Type.STRING },
                 tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-                date: { type: Type.STRING, description: "YYYY-MM-DD" },
+                date: { type: Type.STRING, description: "YYYY-MM-DD HH:mm or YYYY-MM-DD" },
                 confidence: { type: Type.NUMBER }
             },
             required: ["amount", "type", "category", "note"]

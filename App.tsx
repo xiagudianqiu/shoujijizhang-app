@@ -656,7 +656,7 @@ const App = () => {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <p className="font-bold text-slate-800 text-sm line-clamp-1">{candidate.note || '未命名交易'}</p>
-                                                <div className="flex gap-2 mt-1">
+                                                <div className="flex flex-wrap gap-2 mt-1 items-center">
                                                     <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 border border-gray-200">
                                                         {CategoryLabels[candidate.category] || candidate.category}
                                                     </span>
@@ -665,6 +665,12 @@ const App = () => {
                                                             {tag}
                                                         </span>
                                                     ))}
+                                                    {candidate.date && (
+                                                        <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 flex items-center gap-1">
+                                                             <Calendar size={10} />
+                                                             {candidate.date.length > 10 ? candidate.date.substring(5, 16).replace('T', ' ') : candidate.date.substring(5)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className={`font-mono font-bold text-base tabular-nums ${candidate.type === TransactionType.EXPENSE ? 'text-sl-expense' : 'text-sl-income'}`}>
