@@ -1,0 +1,8 @@
+{
+  "name": "SmartLedger Pro",
+  "description": "A precision-first, local-first financial management system with AI-powered insights and zero-latency recording.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}

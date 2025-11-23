@@ -1,0 +1,21 @@
+{
+  "name": "SmartLedger Pro",
+  "short_name": "SmartLedger",
+  "description": "极客精神的本地优先记账工具",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F9FA",
+  "theme_color": "#F8F9FA",
+  "icons": [
+    {
+      "src": "https://cdn.lucide.dev/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "orientation": "portrait-primary",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
