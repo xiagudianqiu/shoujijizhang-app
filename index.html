@@ -1,23 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#F8F9FA">
-    
-    <!-- PWA Settings -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SmartLedger">
-    <meta name="mobile-web-app-capable" content="yes">
-    
+    <meta name="description" content="SmartLedger Pro - 极客记账">
+    <link rel="icon" type="image/svg+xml" href="https://cdn.lucide.dev/icon-512x512.png" />
     <title>SmartLedger Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -27,8 +17,8 @@
                         mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        'sl-expense': '#E07A5F', // Terracotta
-                        'sl-income': '#3D5A80', // Prussian Blue
+                        'sl-expense': '#E07A5F',
+                        'sl-income': '#3D5A80',
                         'sl-bg': '#F8F9FA',
                         'sl-card': '#FFFFFF',
                     },
@@ -59,65 +49,31 @@
         }
     </script>
     <style>
-        body {
-            background-color: #F8F9FA;
-            -webkit-font-smoothing: antialiased;
-            overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
-            touch-action: manipulation;
-            user-select: none; /* App-like feel */
-        }
-        /* Custom scrollbar hiding for clean UI */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        /* Tap highlight removal */
-        * {
-            -webkit-tap-highlight-color: transparent;
-        }
-        /* Tabular nums for all numbers */
-        .tabular-nums {
-            font-feature-settings: "tnum";
-            font-variant-numeric: tabular-nums;
-        }
-        /* Hide number input spinners */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
+        body { background-color: #F8F9FA; overscroll-behavior-y: none; touch-action: manipulation; user-select: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        * { -webkit-tap-highlight-color: transparent; }
+        .tabular-nums { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.5.0"
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "vite-plugin-pwa": "https://aistudiocdn.com/vite-plugin-pwa@^1.1.0"
   }
 }
 </script>
 </head>
 <body>
     <div id="root"></div>
-    <script>
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => {
-                        console.log('SW registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('SW registration failed:', error);
-                    });
-            });
-        }
-    </script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

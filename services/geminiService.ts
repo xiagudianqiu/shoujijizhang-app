@@ -5,8 +5,10 @@ import { TransactionType } from "../types";
 const getGenAI = () => {
   // Try to get from LocalStorage first (for the standalone app)
   const storedKey = localStorage.getItem('gemini_api_key');
-  // Fallback to process.env (for web deployment)
-  const envKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : undefined;
+  
+  // Compatible way to read env vars in Vite (ImportMeta)
+  // @ts-ignore
+  const envKey = import.meta.env ? import.meta.env.VITE_API_KEY : undefined;
   
   const key = storedKey || envKey;
   
@@ -130,7 +132,6 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
     const text = response.text;
     if (!text) return [];
     
-    // Ensure we always return an array
     const parsed = JSON.parse(text);
     return Array.isArray(parsed) ? parsed : [parsed];
     
