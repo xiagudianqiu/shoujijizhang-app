@@ -785,7 +785,7 @@ const App = () => {
 
                     <div className="mb-6 text-center">
                          <p className="text-sm text-gray-500 font-medium">SmartLedger Pro</p>
-                         <p className="text-xs text-gray-300 mt-1">Version 2.0.0</p>
+                         <p className="text-xs text-gray-300 mt-1">Version 2.1.0</p>
                     </div>
 
                     <div className="flex gap-3">
@@ -818,7 +818,10 @@ const App = () => {
                </div>
                <div>
                    <h1 className="font-bold text-slate-900 text-lg leading-tight tracking-tight">SmartLedger</h1>
-                   <p className="text-[10px] text-gray-400 font-mono tracking-widest uppercase font-bold">PRO VERSION</p>
+                   <div className="flex items-center gap-2">
+                       <p className="text-[10px] text-gray-400 font-mono tracking-widest uppercase font-bold">PRO VERSION</p>
+                       <span className="text-[10px] bg-red-500 text-white px-1.5 rounded-sm font-bold font-mono">v2.1</span>
+                   </div>
                </div>
              </div>
              <button onClick={() => setView('SETTINGS')} className="p-2 bg-white rounded-full shadow-sm active:scale-90 transition-transform">
