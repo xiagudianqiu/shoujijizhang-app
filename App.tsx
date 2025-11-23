@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Mic, BarChart2, Home, Settings, Wand2, CheckSquare, RefreshCw, Camera, X, Edit3, Trash2, Check, Circle, CheckCircle2, Calendar, Clock, Key } from 'lucide-react';
+import { Plus, Mic, BarChart2, Home, Settings, Wand2, CheckSquare, RefreshCw, Camera, X, Edit3, Trash2, Check, Circle, CheckCircle2, Calendar, Clock } from 'lucide-react';
 import NumericKeypad from './components/NumericKeypad';
 import TransactionList from './components/TransactionList';
 import Charts from './components/Charts';
@@ -13,8 +12,6 @@ const App = () => {
   const [view, setView] = useState<ViewState>('DASHBOARD');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [toast, setToast] = useState<{message: string, visible: boolean}>({message: '', visible: false});
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
   
   // Transaction Input State
   const [newTxType, setNewTxType] = useState<TransactionType>(TransactionType.EXPENSE);
@@ -40,15 +37,6 @@ const App = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  // Check for API Key on mount
-  useEffect(() => {
-    const localKey = localStorage.getItem('gemini_api_key');
-    const envKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : undefined;
-    if (localKey || envKey) {
-        setHasApiKey(true);
-    }
-  }, []);
-
   // Initial Load
   useEffect(() => {
     const loaded = loadTransactions();
@@ -69,14 +57,6 @@ const App = () => {
         setSelectedOcrIndices(new Set());
     }
   }, [ocrCandidates.length]);
-
-  const saveApiKey = () => {
-      if(apiKeyInput.trim().length > 10) {
-          localStorage.setItem('gemini_api_key', apiKeyInput.trim());
-          setHasApiKey(true);
-          showToast("API Key 已保存");
-      }
-  };
 
   const showToast = (message: string) => {
     setToast({ message, visible: true });
@@ -219,20 +199,15 @@ const App = () => {
         const result = await parseNaturalLanguageTransaction(aiInput);
 
         if (result) {
-        addTransactionFromAI(result);
-        setAiInput('');
-        setView('DASHBOARD');
-        showToast('AI 识别成功并入账');
+            addTransactionFromAI(result);
+            setAiInput('');
+            setView('DASHBOARD');
+            showToast('AI 识别成功并入账');
         } else {
-        setAiError('无法识别，请尝试: "午餐 25元"');
+            setAiError('无法识别，请尝试: "午餐 25元"');
         }
     } catch (e: any) {
-        if (e.message === 'API_KEY_MISSING') {
-            setHasApiKey(false);
-            showToast("请先配置 API Key");
-        } else {
-            setAiError('AI 服务请求失败');
-        }
+        setAiError('AI 服务请求失败');
     }
     setIsAiProcessing(false);
   };
@@ -259,12 +234,7 @@ const App = () => {
             }
         } catch (e: any) {
             setIsAiProcessing(false);
-            if (e.message === 'API_KEY_MISSING') {
-                setHasApiKey(false);
-                showToast("请先配置 API Key");
-            } else {
-                setShowOcrFail(true);
-            }
+            setShowOcrFail(true);
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
       };
@@ -359,14 +329,8 @@ const App = () => {
     return acc + t.amount;
   }, 0);
 
-  // If no API key is set, show Setup Screen (except for pure viewing)
-  // But we want to allow basic ledger usage without key. AI features will trigger checks.
-  // Let's add a Settings overlay if user wants to configure it.
-
   const renderContent = () => {
-    // ... (Previous Render Content - View logic remains the same)
     if (view === 'ADD_TRANSACTION') {
-        // ... (Existing ADD_TRANSACTION render code)
         const categories = newTxType === TransactionType.EXPENSE 
         ? [Category.FOOD, Category.TRANSPORT, Category.SHOPPING, Category.HOUSING, Category.OTHER]
         : [Category.SALARY, Category.INVESTMENT, Category.OTHER];
@@ -552,12 +516,6 @@ const App = () => {
                     
                     {aiError && <p className="text-red-500 mt-3 text-sm flex items-center gap-1 font-medium"><span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"/> {aiError}</p>}
                     
-                    {!hasApiKey && (
-                        <div className="mt-4 p-3 bg-amber-50 text-amber-800 rounded-xl text-xs mb-2">
-                            提示：您尚未配置 API Key，AI 功能可能无法使用。请在主页右上角设置中配置。
-                        </div>
-                    )}
-
                     <button 
                         onClick={handleAiSubmit}
                         disabled={isAiProcessing}
@@ -586,8 +544,6 @@ const App = () => {
 
     return (
       <main className="max-w-md mx-auto min-h-screen relative flex flex-col bg-sl-bg">
-        {/* API Key Modal (Only if manually triggered via settings? No, let's just use a settings modal) */}
-        
         {/* Loading Overlay for OCR */}
         {isAiProcessing && (
             <div className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm flex items-center justify-center flex-col text-white">
@@ -604,7 +560,7 @@ const App = () => {
                         <X size={32} />
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">无法识别</h3>
-                    <p className="text-gray-400 text-sm mb-8">未能提取到信息或 API Key 无效。</p>
+                    <p className="text-gray-400 text-sm mb-8">未能提取到信息或服务暂时不可用。</p>
                     
                     <button 
                         onClick={switchToManualInput}
@@ -625,7 +581,6 @@ const App = () => {
         {/* OCR Result Modal (List View) */}
         {ocrCandidates.length > 0 && (
             <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
-                {/* ... (Keep existing OCR Modal Content) ... */}
                 <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-scale-in flex flex-col max-h-[85vh]">
                     <div className="bg-slate-900 px-6 py-6 text-white relative shrink-0 z-10">
                          <div className="flex items-center gap-2 mb-2 opacity-80">
@@ -723,7 +678,7 @@ const App = () => {
             </div>
         )}
 
-        {/* Settings Modal (API Key Input) */}
+        {/* Settings Modal (Cleaned up) */}
         {view === 'SETTINGS' && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
                 <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl">
@@ -732,20 +687,8 @@ const App = () => {
                     </h2>
                     
                     <div className="mb-6">
-                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Gemini API Key</label>
-                        <div className="bg-gray-50 rounded-xl p-2 flex items-center border border-gray-200">
-                            <Key size={16} className="text-gray-400 ml-2" />
-                            <input 
-                                type="password"
-                                value={apiKeyInput}
-                                onChange={(e) => setApiKeyInput(e.target.value)}
-                                placeholder="在此粘贴 API Key"
-                                className="w-full bg-transparent p-2 text-sm focus:outline-none"
-                            />
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-2">
-                            为了使用 AI 记账功能，您需要配置 Gemini API Key。该 Key 仅存储在您的本地设备上。
-                        </p>
+                         <p className="text-sm text-gray-500 mb-2">SmartLedger Pro</p>
+                         <p className="text-xs text-gray-400">Version 1.0.0</p>
                     </div>
 
                     <div className="flex gap-3">
@@ -753,16 +696,7 @@ const App = () => {
                             onClick={() => setView('DASHBOARD')}
                             className="flex-1 py-3 rounded-xl font-bold text-slate-500 bg-gray-100 hover:bg-gray-200"
                         >
-                            取消
-                        </button>
-                        <button 
-                            onClick={() => {
-                                saveApiKey();
-                                setView('DASHBOARD');
-                            }}
-                            className="flex-1 py-3 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800"
-                        >
-                            保存
+                            关闭
                         </button>
                     </div>
                 </div>
@@ -791,7 +725,7 @@ const App = () => {
                </div>
              </div>
              <button onClick={() => setView('SETTINGS')} className="p-2 bg-white rounded-full shadow-sm active:scale-90 transition-transform">
-                 <Settings size={20} className={`text-gray-400 ${!hasApiKey ? 'text-amber-500' : ''}`} />
+                 <Settings size={20} className="text-gray-400" />
              </button>
            </div>
            
@@ -833,11 +767,6 @@ const App = () => {
             />
             <button 
                 onClick={() => {
-                    if (!hasApiKey) {
-                        setView('SETTINGS'); 
-                        showToast('请先配置 API Key');
-                        return;
-                    }
                     fileInputRef.current?.click();
                 }}
                 className="w-12 h-12 bg-white text-slate-700 rounded-full shadow-lg shadow-slate-900/10 flex items-center justify-center border border-slate-100 active:scale-90 transition-transform"
@@ -846,11 +775,6 @@ const App = () => {
             </button>
             <button 
                 onClick={() => {
-                    if (!hasApiKey) {
-                        setView('SETTINGS'); 
-                        showToast('请先配置 API Key');
-                        return;
-                    }
                     setView('AI_INPUT');
                 }}
                 className="w-12 h-12 bg-white text-sl-income rounded-full shadow-lg shadow-sl-income/20 flex items-center justify-center border border-sl-income/10 active:scale-90 transition-transform"
