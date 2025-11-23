@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Mic, BarChart2, Home, Settings, Wand2, CheckSquare, RefreshCw, Camera, X, Edit3, Trash2, Check, Circle, CheckCircle2, Calendar, Clock, Download, Upload } from 'lucide-react';
+import { Plus, Mic, BarChart2, Home, Settings, Wand2, CheckSquare, RefreshCw, Camera, X, Edit3, Trash2, Check, Circle, CheckCircle2, Calendar, Clock, Download, Upload, Search, Volume2, VolumeX } from 'lucide-react';
 import NumericKeypad from './components/NumericKeypad';
 import TransactionList from './components/TransactionList';
 import Charts from './components/Charts';
-import { Transaction, TransactionType, Category, ViewState, CategoryLabels } from './types';
-import { saveTransactions, loadTransactions } from './services/storageService';
+import { Transaction, TransactionType, Category, ViewState, CategoryLabels, AppSettings } from './types';
+import { saveTransactions, loadTransactions, saveSettings, loadSettings } from './services/storageService';
 import { parseNaturalLanguageTransaction, parseImageTransaction, NLPResult } from './services/geminiService';
 import { formatCurrency, formatDate } from './utils/format';
 
 const App = () => {
   const [view, setView] = useState<ViewState>('DASHBOARD');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [settings, setSettings] = useState<AppSettings>({ monthlyBudget: 500000, soundEnabled: true, hapticsEnabled: true });
   const [toast, setToast] = useState<{message: string, visible: boolean}>({message: '', visible: false});
   
   // Transaction Input State
@@ -22,6 +23,11 @@ const App = () => {
   const [isReimbursable, setIsReimbursable] = useState(false);
   const [isRefund, setIsRefund] = useState(false);
   const [initialKeypadValue, setInitialKeypadValue] = useState<number>(0);
+  const [editingTxId, setEditingTxId] = useState<string | null>(null); // For editing existing transactions
+
+  // Dashboard State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showBudget, setShowBudget] = useState(false); // Toggle between Net Worth and Budget on header
   
   // AI / OCR State
   const [aiInput, setAiInput] = useState('');
@@ -37,6 +43,7 @@ const App = () => {
   
   // Settings State
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [budgetInput, setBudgetInput] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +54,10 @@ const App = () => {
     const loaded = loadTransactions();
     setTransactions(loaded);
     
+    const loadedSettings = loadSettings();
+    setSettings(loadedSettings);
+    setBudgetInput((loadedSettings.monthlyBudget / 100).toString());
+    
     // Load stored API key
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) setApiKeyInput(storedKey);
@@ -56,6 +67,10 @@ const App = () => {
   useEffect(() => {
     saveTransactions(transactions);
   }, [transactions]);
+
+  useEffect(() => {
+    saveSettings(settings);
+  }, [settings]);
 
   useEffect(() => {
     if (ocrCandidates.length > 0) {
@@ -74,6 +89,18 @@ const App = () => {
   const saveApiKey = () => {
       localStorage.setItem('gemini_api_key', apiKeyInput.trim());
       showToast('API Key 已保存');
+  };
+  
+  const saveBudget = () => {
+      const amount = parseFloat(budgetInput);
+      if (!isNaN(amount)) {
+          setSettings(prev => ({ ...prev, monthlyBudget: amount * 100 }));
+          showToast('月度预算已更新');
+      }
+  };
+
+  const toggleSound = () => {
+      setSettings(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }));
   };
 
   const handleExportData = () => {
@@ -114,6 +141,7 @@ const App = () => {
   };
 
   const handleAddTransaction = (amountCents: number) => {
+    // 1. Handle OCR Editing
     if (editingOcrIndex !== null) {
         const updatedCandidates = [...ocrCandidates];
         const current = updatedCandidates[editingOcrIndex];
@@ -138,6 +166,7 @@ const App = () => {
         return;
     }
 
+    // 2. Handle Adding TO OCR
     if (isAddingToOcr) {
         const tags = [];
         if (isReimbursable) tags.push('报销');
@@ -167,6 +196,7 @@ const App = () => {
         return;
     }
 
+    // 3. Handle Normal Add or Edit Existing
     let finalAmount = amountCents;
     if (newTxType === TransactionType.EXPENSE && isRefund) {
         finalAmount = -amountCents;
@@ -176,21 +206,56 @@ const App = () => {
     if (isReimbursable) tags.push('报销');
     if (isRefund) tags.push('退款');
     
-    const newTx: Transaction = {
-      id: Date.now().toString(),
-      amount: finalAmount,
-      type: newTxType,
-      category: newTxCategory,
-      note: newTxNote || (isReimbursable ? '报销款' : (isRefund ? '退款' : '')),
-      date: newTxDate,
-      createdAt: Date.now(),
-      tags: tags
-    };
-    
-    setTransactions(prev => [newTx, ...prev]);
-    
-    const remainingBudget = 300000 - transactions.filter(t => t.type === TransactionType.EXPENSE).reduce((a,b) => a+b.amount, 0) - finalAmount;
-    showToast(`记好了！本月预算还剩 ${formatCurrency(remainingBudget)}`);
+    if (editingTxId) {
+        // Update Existing Transaction
+        setTransactions(prev => prev.map(tx => {
+            if (tx.id === editingTxId) {
+                return {
+                    ...tx,
+                    amount: finalAmount,
+                    type: newTxType,
+                    category: newTxCategory,
+                    note: newTxNote || (isReimbursable ? '报销款' : (isRefund ? '退款' : '')),
+                    date: newTxDate,
+                    tags: tags
+                };
+            }
+            return tx;
+        }));
+        showToast('交易已更新');
+    } else {
+        // Create New Transaction
+        const newTx: Transaction = {
+          id: Date.now().toString(),
+          amount: finalAmount,
+          type: newTxType,
+          category: newTxCategory,
+          note: newTxNote || (isReimbursable ? '报销款' : (isRefund ? '退款' : '')),
+          date: newTxDate,
+          createdAt: Date.now(),
+          tags: tags
+        };
+        
+        setTransactions(prev => [newTx, ...prev]);
+        
+        // Show budget toast if expense
+        if (newTxType === TransactionType.EXPENSE && finalAmount > 0) {
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthlyExpense = transactions
+                .filter(t => t.type === TransactionType.EXPENSE)
+                .filter(t => {
+                    const d = new Date(t.date);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                })
+                .reduce((a, b) => a + b.amount, 0) + finalAmount;
+            
+            const remaining = settings.monthlyBudget - monthlyExpense;
+            showToast(`记好了！本月预算还剩 ${formatCurrency(remaining)}`);
+        } else {
+            showToast('记账成功');
+        }
+    }
 
     resetForm();
     setView('DASHBOARD');
@@ -205,6 +270,31 @@ const App = () => {
     setNewTxDate(Date.now());
     setInitialKeypadValue(0);
     setEditingOcrIndex(null);
+    setEditingTxId(null);
+  };
+
+  const startEditTransaction = (tx: Transaction) => {
+      setEditingTxId(tx.id);
+      setNewTxType(tx.type);
+      setNewTxCategory(tx.category as Category);
+      setNewTxNote(tx.note);
+      setInitialKeypadValue(Math.abs(tx.amount));
+      setNewTxDate(tx.date);
+      
+      const tags = tx.tags || [];
+      setIsReimbursable(tags.includes('报销'));
+      setIsRefund(tags.includes('退款'));
+      
+      setView('ADD_TRANSACTION');
+  };
+
+  const handleDeleteTransaction = () => {
+      if (editingTxId) {
+          setTransactions(prev => prev.filter(tx => tx.id !== editingTxId));
+          resetForm();
+          setView('DASHBOARD');
+          showToast('交易已删除');
+      }
   };
 
   const startEditOcrCandidate = (index: number) => {
@@ -370,10 +460,32 @@ const App = () => {
       }
   };
 
+  // Calculations for Dashboard
   const totalBalance = transactions.reduce((acc, t) => {
     if (t.type === TransactionType.EXPENSE) return acc - t.amount;
     return acc + t.amount;
   }, 0);
+
+  const currentMonthExpense = transactions
+    .filter(t => t.type === TransactionType.EXPENSE)
+    .filter(t => {
+        const d = new Date(t.date);
+        const now = new Date();
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    })
+    .reduce((a, b) => a + b.amount, 0);
+
+  const remainingBudget = settings.monthlyBudget - currentMonthExpense;
+
+  const filteredTransactions = transactions.filter(tx => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return (
+          tx.note.toLowerCase().includes(term) || 
+          (CategoryLabels[tx.category] || tx.category).toLowerCase().includes(term) ||
+          (tx.amount / 100).toString().includes(term)
+      );
+  });
 
   const renderContent = () => {
     if (view === 'ADD_TRANSACTION') {
@@ -381,29 +493,25 @@ const App = () => {
         ? [Category.FOOD, Category.TRANSPORT, Category.SHOPPING, Category.HOUSING, Category.OTHER]
         : [Category.SALARY, Category.INVESTMENT, Category.OTHER];
 
-      const currentTxDateObj = new Date(newTxDate);
-      const isToday = new Date().toDateString() === currentTxDateObj.toDateString();
-      const dateDisplay = isToday ? '今天' : formatDate(newTxDate).split(' ')[0];
-      const timeDisplay = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(currentTxDateObj);
-
       return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex flex-col justify-end">
           <div className="bg-white rounded-t-[2rem] max-h-[92dvh] h-full flex flex-col overflow-hidden animate-slide-up shadow-2xl">
             <div className="pt-4 px-5 pb-2">
-              {editingOcrIndex !== null && (
-                  <div className="mb-2 text-center">
-                      <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold">
-                          正在修改第 {editingOcrIndex + 1} 笔识别结果
+              <div className="flex justify-center mb-2">
+                  {editingTxId ? (
+                      <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
+                          <Edit3 size={10} /> 编辑交易
                       </span>
-                  </div>
-              )}
-              {isAddingToOcr && (
-                  <div className="mb-2 text-center">
+                  ) : editingOcrIndex !== null ? (
+                      <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold">
+                          修改 AI 识别结果
+                      </span>
+                  ) : isAddingToOcr ? (
                       <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold">
                           添加到识别列表
                       </span>
-                  </div>
-              )}
+                  ) : null}
+              </div>
               
               <div className="flex bg-gray-100 p-1 rounded-2xl mb-4">
                 <button 
@@ -466,21 +574,6 @@ const App = () => {
                     onChange={handleDateChange}
                     value={new Date(newTxDate - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                  />
-                 
-                 <button 
-                    onClick={triggerDatePicker}
-                    className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 active:bg-gray-100 transition-colors"
-                 >
-                     <Calendar size={14} className="text-sl-income" />
-                     {dateDisplay}
-                 </button>
-                 <button 
-                    onClick={triggerDatePicker}
-                    className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 active:bg-gray-100 transition-colors"
-                 >
-                     <Clock size={14} className="text-sl-income" />
-                     {timeDisplay}
-                 </button>
               </div>
 
             </div>
@@ -510,24 +603,39 @@ const App = () => {
                 </div>
             )}
 
-            <div className="flex-1 bg-white">
+            <div className="flex-1 bg-white relative">
                <NumericKeypad 
-                  key={editingOcrIndex !== null ? `edit-${editingOcrIndex}` : 'new'} 
+                  key={editingOcrIndex !== null ? `edit-${editingOcrIndex}` : (editingTxId ? `edit-tx-${editingTxId}` : 'new')} 
                   initialValue={initialKeypadValue}
                   onChange={() => {}}
                   onDateClick={triggerDatePicker}
+                  selectedDate={newTxDate}
+                  soundEnabled={settings.soundEnabled}
                   onCancel={() => {
                       setEditingOcrIndex(null);
+                      setEditingTxId(null);
                       setIsAddingToOcr(false);
                       setView('DASHBOARD');
                   }}
                   onComplete={handleAddTransaction}
                />
+               
+               {editingTxId && (
+                   <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4">
+                       <button 
+                           onClick={handleDeleteTransaction}
+                           className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center border border-red-100 shadow-sm active:scale-90 transition-transform"
+                       >
+                           <Trash2 size={18} />
+                       </button>
+                   </div>
+               )}
             </div>
 
             <button 
               onClick={() => {
                   setEditingOcrIndex(null);
+                  setEditingTxId(null);
                   setIsAddingToOcr(false);
                   setView('DASHBOARD');
               }} 
@@ -737,6 +845,37 @@ const App = () => {
                     <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                         <Settings size={24} /> 设置
                     </h2>
+
+                    <div className="mb-8">
+                        <h3 className="text-sm font-bold text-slate-800 mb-3">财务配置</h3>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-3">
+                             <label className="block text-xs text-gray-500 mb-2 font-medium">月度预算 (元)</label>
+                             <div className="flex gap-2">
+                                 <input 
+                                    type="number"
+                                    value={budgetInput}
+                                    onChange={(e) => setBudgetInput(e.target.value)}
+                                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/10 font-mono"
+                                 />
+                                 <button 
+                                    onClick={saveBudget}
+                                    className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold"
+                                 >
+                                    更新
+                                 </button>
+                             </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-center justify-between">
+                            <span className="text-sm font-medium text-slate-700">按键音效</span>
+                            <button 
+                                onClick={toggleSound}
+                                className={`w-12 h-7 rounded-full transition-colors flex items-center px-1 ${settings.soundEnabled ? 'bg-indigo-500' : 'bg-gray-300'}`}
+                            >
+                                <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${settings.soundEnabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                            </button>
+                        </div>
+                    </div>
                     
                     <div className="mb-8">
                         <h3 className="text-sm font-bold text-slate-800 mb-3">AI 配置</h3>
@@ -791,7 +930,7 @@ const App = () => {
 
                     <div className="mb-6 text-center">
                          <p className="text-sm text-gray-500 font-medium">SmartLedger Pro</p>
-                         <p className="text-xs text-gray-300 mt-1">Version 2.2.0</p>
+                         <p className="text-xs text-gray-300 mt-1">Version 2.3.0</p>
                     </div>
 
                     <div className="flex gap-3">
@@ -816,7 +955,7 @@ const App = () => {
         </div>
 
         {/* Header */}
-        <header className="px-6 pt-12 pb-4 bg-sl-bg sticky top-0 z-40">
+        <header className="px-6 pt-12 pb-4 bg-sl-bg sticky top-0 z-40 transition-all">
            <div className="flex justify-between items-center mb-6">
              <div className="flex items-center gap-3">
                <div className="w-10 h-10 bg-slate-900 rounded-[14px] flex items-center justify-center text-white font-bold shadow-lg shadow-slate-900/20">
@@ -826,30 +965,66 @@ const App = () => {
                    <h1 className="font-bold text-slate-900 text-lg leading-tight tracking-tight">SmartLedger</h1>
                    <div className="flex items-center gap-2">
                        <p className="text-[10px] text-gray-400 font-mono tracking-widest uppercase font-bold">PRO VERSION</p>
-                       <span className="text-[10px] bg-red-500 text-white px-1.5 rounded-sm font-bold font-mono">v2.2</span>
+                       <span className="text-[10px] bg-red-500 text-white px-1.5 rounded-sm font-bold font-mono">v2.3</span>
                    </div>
                </div>
              </div>
-             <button onClick={() => setView('SETTINGS')} className="p-2 bg-white rounded-full shadow-sm active:scale-90 transition-transform">
-                 <Settings size={20} className="text-gray-400" />
-             </button>
+             <div className="flex gap-3">
+                 <button onClick={() => setView('SETTINGS')} className="p-2 bg-white rounded-full shadow-sm active:scale-90 transition-transform">
+                     <Settings size={20} className="text-gray-400" />
+                 </button>
+             </div>
            </div>
            
-           <div className="bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden transform transition-transform active:scale-[0.98]">
+           {/* Net Worth / Budget Card */}
+           <div 
+             onClick={() => setShowBudget(!showBudget)}
+             className="bg-slate-900 rounded-[2rem] p-6 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden transform transition-all active:scale-[0.98] cursor-pointer mb-6"
+           >
                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
                <div className="absolute top-10 -left-10 w-20 h-20 bg-white/10 rounded-full blur-2xl"></div>
                
-              <p className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wider">净资产 (Net Worth)</p>
-              <h1 className="text-4xl font-mono font-bold tracking-tight tabular-nums">
-                {formatCurrency(totalBalance)}
-              </h1>
+              <div className="flex justify-between items-start">
+                  <div>
+                      <p className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wider flex items-center gap-2">
+                          {showBudget ? '本月剩余预算 (Budget Left)' : '净资产 (Net Worth)'}
+                          <RefreshCw size={10} className="opacity-50" />
+                      </p>
+                      <h1 className="text-4xl font-mono font-bold tracking-tight tabular-nums">
+                        {formatCurrency(showBudget ? remainingBudget : totalBalance)}
+                      </h1>
+                  </div>
+              </div>
+              
               <div className="mt-5 flex gap-2">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">本月支出</span>
-                    <span className="text-sm font-mono font-medium">{formatCurrency(transactions.filter(t=>t.type===TransactionType.EXPENSE).reduce((a,b)=>a+b.amount,0))}</span>
+                    <span className="text-sm font-mono font-medium">{formatCurrency(currentMonthExpense)}</span>
                   </div>
               </div>
            </div>
+
+           {/* Search Bar */}
+           {view === 'DASHBOARD' && (
+               <div className="relative mb-2">
+                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                   <input 
+                      type="text" 
+                      placeholder="搜索账单、金额或分类..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-white h-12 rounded-2xl pl-11 pr-4 text-sm font-medium shadow-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all placeholder:text-gray-300"
+                   />
+                   {searchTerm && (
+                       <button 
+                         onClick={() => setSearchTerm('')}
+                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
+                       >
+                           <X size={14} />
+                       </button>
+                   )}
+               </div>
+           )}
         </header>
 
         {view === 'STATS' ? (
@@ -858,7 +1033,10 @@ const App = () => {
              </div>
         ) : view === 'DASHBOARD' || view === 'SETTINGS' ? (
             <div className="flex-1 overflow-auto no-scrollbar animate-fade-in relative z-0">
-                <TransactionList transactions={transactions} />
+                <TransactionList 
+                    transactions={filteredTransactions} 
+                    onTransactionClick={startEditTransaction}
+                />
             </div>
         ) : null}
 

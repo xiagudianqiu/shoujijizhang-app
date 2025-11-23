@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Transaction, TransactionType, CategoryLabels } from '../types';
 import { formatCurrency, formatDateHeader } from '../utils/format';
@@ -5,6 +6,7 @@ import { ShoppingBag, Coffee, Home, Zap, MoreHorizontal, Briefcase, TrendingUp, 
 
 interface TransactionListProps {
   transactions: Transaction[];
+  onTransactionClick: (transaction: Transaction) => void;
 }
 
 const getIcon = (category: string) => {
@@ -19,7 +21,7 @@ const getIcon = (category: string) => {
   }
 };
 
-const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
+const TransactionList: React.FC<TransactionListProps> = ({ transactions, onTransactionClick }) => {
   const grouped = transactions.reduce((acc, tx) => {
     const dateStr = new Date(tx.date).toLocaleDateString();
     if (!acc[dateStr]) acc[dateStr] = [];
@@ -69,8 +71,9 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
               {grouped[date].map((tx, idx) => (
                 <div 
                   key={tx.id} 
+                  onClick={() => onTransactionClick(tx)}
                   className={`
-                    flex items-center justify-between p-4 active:bg-gray-50 transition-colors
+                    flex items-center justify-between p-4 active:bg-gray-50 transition-colors cursor-pointer
                     ${idx !== grouped[date].length - 1 ? 'border-b border-gray-50' : ''}
                   `}
                 >

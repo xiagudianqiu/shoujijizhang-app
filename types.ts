@@ -49,4 +49,10 @@ export interface AssetSummary {
   netWorth: number;
 }
 
+export interface AppSettings {
+  monthlyBudget: number; // in cents
+  soundEnabled: boolean;
+  hapticsEnabled: boolean;
+}
+
 export type ViewState = 'DASHBOARD' | 'ADD_TRANSACTION' | 'AI_INPUT' | 'STATS' | 'SETTINGS';

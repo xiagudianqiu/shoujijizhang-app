@@ -9,9 +9,19 @@ interface NumericKeypadProps {
   onChange: (value: number) => void;
   onDateClick?: () => void;
   initialValue?: number;
+  selectedDate?: number; // Timestamp for displaying current date on the button
+  soundEnabled?: boolean;
 }
 
-const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onChange, onDateClick, initialValue = 0 }) => {
+const NumericKeypad: React.FC<NumericKeypadProps> = ({ 
+  onComplete, 
+  onCancel, 
+  onChange, 
+  onDateClick, 
+  initialValue = 0, 
+  selectedDate,
+  soundEnabled = true 
+}) => {
   const [display, setDisplay] = useState(initialValue !== 0 ? (initialValue / 100).toString() : '');
   const [isCompleted, setIsCompleted] = useState(false);
   
@@ -29,6 +39,8 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
   };
 
   const playSound = (type: 'click' | 'complete' = 'click') => {
+    if (!soundEnabled) return;
+
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     
@@ -127,6 +139,21 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
     }, 600);
   };
 
+  const getDateLabel = () => {
+    if (!selectedDate) return <Calendar size={22} />;
+    
+    const d = new Date(selectedDate);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    
+    return (
+        <div className="flex flex-col items-center justify-center leading-none gap-0.5">
+             <span className="text-[10px] font-bold opacity-50">{isToday ? '今天' : `${d.getMonth() + 1}/${d.getDate()}`}</span>
+             <span className="text-xs font-bold font-mono tracking-tight">{d.getHours().toString().padStart(2, '0')}:{d.getMinutes().toString().padStart(2, '0')}</span>
+        </div>
+    );
+  };
+
   const buttons = [
     { label: 'AC', action: () => handlePress('AC'), style: 'text-sl-expense font-bold' },
     { label: '÷', action: () => handlePress('/'), style: 'text-sl-income font-bold text-2xl' },
@@ -146,7 +173,11 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
     { label: '1', action: () => handlePress('1') },
     { label: '2', action: () => handlePress('2') },
     { label: '3', action: () => handlePress('3') },
-    { label: <Calendar size={22} />, action: () => onDateClick && onDateClick(), style: 'text-slate-400 active:text-sl-income' }, 
+    { 
+        label: getDateLabel(), 
+        action: () => onDateClick && onDateClick(), 
+        style: selectedDate ? 'text-sl-income bg-indigo-50/50 border-indigo-100' : 'text-slate-400 active:text-sl-income' 
+    }, 
     
     { label: '0', action: () => handlePress('0') },
     { label: '.', action: () => handlePress('.') },
@@ -181,7 +212,7 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
         </div>
       </div>
 
-      {/* Keypad Grid - Reduced gap and button height for better mobile fit */}
+      {/* Keypad Grid - Compact layout */}
       <div className="grid grid-cols-4 gap-1.5 px-3 pt-3 bg-gray-50/50">
         {buttons.map((btn, idx) => (
           <button
