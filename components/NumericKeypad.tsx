@@ -162,11 +162,10 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
   ];
 
   const currentResult = evaluate(display);
-  // Check if expression contains an operator to decide whether to show result hint
   const hasOperator = ['+', '-', '*', '/'].some(op => display.includes(op));
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.08)] pb-safe">
+    <div className="flex flex-col h-full bg-white rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.08)] pb-[calc(env(safe-area-inset-bottom)+2rem)]">
       {/* Display Area */}
       <div className="flex-1 flex flex-col justify-end items-end px-8 pb-4 pt-4 border-b border-gray-50 bg-white rounded-t-3xl">
         <div className="text-gray-400 text-sm font-mono h-6 mb-1 opacity-70">
@@ -182,14 +181,14 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
         </div>
       </div>
 
-      {/* Keypad Grid */}
-      <div className="grid grid-cols-4 gap-3 p-4 bg-gray-50/50">
+      {/* Keypad Grid - Reduced gap and button height for better mobile fit */}
+      <div className="grid grid-cols-4 gap-2 px-4 pt-4 bg-gray-50/50">
         {buttons.map((btn, idx) => (
           <button
             key={idx}
             onClick={btn.action}
             className={`
-              h-16 rounded-2xl flex items-center justify-center text-2xl font-medium transition-all active:bg-gray-200 active:shadow-inner select-none
+              h-14 rounded-2xl flex items-center justify-center text-xl font-medium transition-all active:bg-gray-200 active:shadow-inner select-none
               ${btn.style || 'bg-white text-slate-800 shadow-sm border border-gray-100/50'}
             `}
           >

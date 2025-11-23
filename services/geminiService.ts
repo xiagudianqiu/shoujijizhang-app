@@ -1,11 +1,17 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { TransactionType } from "../types";
 
 // Helper to get the AI instance
 const getGenAI = () => {
-  // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-  // Note: In Vite, this is replaced at build time by the 'define' config in vite.config.ts
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Try process.env first (build time), then fallback to localStorage (runtime user setting)
+  const apiKey = process.env.API_KEY || localStorage.getItem('gemini_api_key');
+  
+  if (!apiKey) {
+      throw new Error("API Key not found. Please set it in Settings.");
+  }
+  
+  return new GoogleGenAI({ apiKey });
 };
 
 export interface NLPResult {
@@ -56,7 +62,7 @@ export const parseNaturalLanguageTransaction = async (input: string): Promise<NL
 
   } catch (error: any) {
     console.error("Gemini NLP Error:", error);
-    return null;
+    throw error;
   }
 };
 
@@ -122,6 +128,6 @@ export const parseImageTransaction = async (base64Data: string): Promise<NLPResu
     
   } catch (error: any) {
     console.error("OCR Error:", error);
-    return [];
+    throw error;
   }
 };

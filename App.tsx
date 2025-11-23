@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Mic, BarChart2, Home, Settings, Wand2, CheckSquare, RefreshCw, Camera, X, Edit3, Trash2, Check, Circle, CheckCircle2, Calendar, Clock } from 'lucide-react';
+import { Plus, Mic, BarChart2, Home, Settings, Wand2, CheckSquare, RefreshCw, Camera, X, Edit3, Trash2, Check, Circle, CheckCircle2, Calendar, Clock, Download, Upload } from 'lucide-react';
 import NumericKeypad from './components/NumericKeypad';
 import TransactionList from './components/TransactionList';
 import Charts from './components/Charts';
@@ -31,16 +32,24 @@ const App = () => {
   const [ocrCandidates, setOcrCandidates] = useState<NLPResult[]>([]);
   const [selectedOcrIndices, setSelectedOcrIndices] = useState<Set<number>>(new Set());
   const [showOcrFail, setShowOcrFail] = useState(false);
-  const [editingOcrIndex, setEditingOcrIndex] = useState<number | null>(null); // Track which item is being edited
-  const [isAddingToOcr, setIsAddingToOcr] = useState(false); // Track if we are manually adding to the OCR list
+  const [editingOcrIndex, setEditingOcrIndex] = useState<number | null>(null);
+  const [isAddingToOcr, setIsAddingToOcr] = useState(false);
   
+  // Settings State
+  const [apiKeyInput, setApiKeyInput] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
 
   // Initial Load
   useEffect(() => {
     const loaded = loadTransactions();
     setTransactions(loaded);
+    
+    // Load stored API key
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) setApiKeyInput(storedKey);
   }, []);
 
   // Save on Change
@@ -48,7 +57,6 @@ const App = () => {
     saveTransactions(transactions);
   }, [transactions]);
 
-  // Select all OCR candidates by default when they populate
   useEffect(() => {
     if (ocrCandidates.length > 0) {
         const allIndices = new Set(ocrCandidates.map((_, i) => i));
@@ -63,19 +71,60 @@ const App = () => {
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
   };
 
+  const saveApiKey = () => {
+      localStorage.setItem('gemini_api_key', apiKeyInput.trim());
+      showToast('API Key 已保存');
+  };
+
+  const handleExportData = () => {
+    const dataStr = JSON.stringify(transactions, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `smartledger_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('备份文件已生成');
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          setTransactions(parsed);
+          saveTransactions(parsed);
+          showToast('数据恢复成功');
+        } else {
+          showToast('文件格式错误');
+        }
+      } catch (err) {
+        showToast('导入失败');
+      }
+    };
+    reader.readAsText(file);
+    if (backupInputRef.current) backupInputRef.current.value = '';
+  };
+
   const handleAddTransaction = (amountCents: number) => {
-    // --- BRANCH 1: UPDATING AN EXISTING OCR CANDIDATE ---
     if (editingOcrIndex !== null) {
         const updatedCandidates = [...ocrCandidates];
         const current = updatedCandidates[editingOcrIndex];
         
         updatedCandidates[editingOcrIndex] = {
             ...current,
-            amount: amountCents, // Keypad value is always positive absolute
+            amount: amountCents, 
             type: newTxType,
             category: newTxCategory,
             note: newTxNote || current.note,
-            date: new Date(newTxDate).toISOString(), // Save the specific time set by user
+            date: new Date(newTxDate).toISOString(),
             tags: [
                 ...(isReimbursable ? ['报销'] : []),
                 ...(isRefund ? ['退款'] : [])
@@ -84,13 +133,11 @@ const App = () => {
 
         setOcrCandidates(updatedCandidates);
         setEditingOcrIndex(null);
-        
         setView('DASHBOARD');
         showToast('已修改该笔交易');
         return;
     }
 
-    // --- BRANCH 2: ADDING A NEW TRANSACTION TO THE OCR LIST ---
     if (isAddingToOcr) {
         const tags = [];
         if (isReimbursable) tags.push('报销');
@@ -120,7 +167,6 @@ const App = () => {
         return;
     }
 
-    // --- BRANCH 3: ADDING A NEW GLOBAL TRANSACTION (DIRECT) ---
     let finalAmount = amountCents;
     if (newTxType === TransactionType.EXPENSE && isRefund) {
         finalAmount = -amountCents;
@@ -207,7 +253,7 @@ const App = () => {
             setAiError('无法识别，请尝试: "午餐 25元"');
         }
     } catch (e: any) {
-        setAiError('AI 服务请求失败');
+        setAiError('AI 服务请求失败，请检查设置中的 Key');
     }
     setIsAiProcessing(false);
   };
@@ -342,8 +388,8 @@ const App = () => {
 
       return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex flex-col justify-end">
-          <div className="bg-white rounded-t-[2rem] h-[92vh] flex flex-col overflow-hidden animate-slide-up shadow-2xl">
-            <div className="pt-8 px-6 pb-2">
+          <div className="bg-white rounded-t-[2rem] max-h-[90dvh] h-full flex flex-col overflow-hidden animate-slide-up shadow-2xl">
+            <div className="pt-6 px-6 pb-2">
               {editingOcrIndex !== null && (
                   <div className="mb-4 text-center">
                       <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
@@ -359,7 +405,7 @@ const App = () => {
                   </div>
               )}
               
-              <div className="flex bg-gray-100 p-1 rounded-2xl mb-8">
+              <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
                 <button 
                   onClick={() => {
                       setNewTxType(TransactionType.EXPENSE);
@@ -382,7 +428,7 @@ const App = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-5 gap-y-6 gap-x-2 mb-6">
+              <div className="grid grid-cols-5 gap-y-4 gap-x-2 mb-4">
                   {categories.map(cat => (
                       <button 
                         key={cat}
@@ -402,7 +448,7 @@ const App = () => {
                   ))}
               </div>
               
-              <div className="mb-4 px-1">
+              <div className="mb-3 px-1">
                    <input 
                       type="text" 
                       value={newTxNote}
@@ -440,7 +486,7 @@ const App = () => {
             </div>
 
             {newTxType === TransactionType.EXPENSE && (
-                <div className="px-6 mb-4 flex items-center gap-3">
+                <div className="px-6 mb-2 flex items-center gap-3">
                     <button 
                         onClick={() => setIsReimbursable(!isReimbursable)}
                         className={`
@@ -678,23 +724,74 @@ const App = () => {
             </div>
         )}
 
-        {/* Settings Modal (Cleaned up) */}
+        {/* Settings Modal (Updated) */}
         {view === 'SETTINGS' && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
-                <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl">
-                    <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+                    <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                         <Settings size={24} /> 设置
                     </h2>
                     
-                    <div className="mb-6">
-                         <p className="text-sm text-gray-500 mb-2">SmartLedger Pro</p>
-                         <p className="text-xs text-gray-400">Version 1.0.0</p>
+                    <div className="mb-8">
+                        <h3 className="text-sm font-bold text-slate-800 mb-3">AI 配置</h3>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                             <label className="block text-xs text-gray-500 mb-2 font-medium">Gemini API Key</label>
+                             <input 
+                                type="password"
+                                value={apiKeyInput}
+                                onChange={(e) => setApiKeyInput(e.target.value)}
+                                placeholder="sk-..."
+                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-slate-700 mb-3 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                             />
+                             <button 
+                                onClick={saveApiKey}
+                                className="w-full py-2 bg-slate-900 text-white rounded-lg text-xs font-bold"
+                             >
+                                保存 Key
+                             </button>
+                             <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+                                用于支持 OCR 和语音记账。Key 仅保存在本地。
+                             </p>
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <h3 className="text-sm font-bold text-slate-800 mb-3">数据安全</h3>
+                        <div className="space-y-3">
+                            <button 
+                                onClick={handleExportData}
+                                className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-slate-700 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-gray-100 transition-colors"
+                            >
+                                <Download size={16} /> 导出账本数据
+                            </button>
+                            
+                            <div className="relative">
+                                <input 
+                                    type="file" 
+                                    ref={backupInputRef}
+                                    accept=".json"
+                                    className="hidden"
+                                    onChange={handleImportData}
+                                />
+                                <button 
+                                    onClick={() => backupInputRef.current?.click()}
+                                    className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-slate-700 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-gray-100 transition-colors"
+                                >
+                                    <Upload size={16} /> 导入恢复数据
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mb-6 text-center">
+                         <p className="text-sm text-gray-500 font-medium">SmartLedger Pro</p>
+                         <p className="text-xs text-gray-300 mt-1">Version 2.0.0</p>
                     </div>
 
                     <div className="flex gap-3">
                         <button 
                             onClick={() => setView('DASHBOARD')}
-                            className="flex-1 py-3 rounded-xl font-bold text-slate-500 bg-gray-100 hover:bg-gray-200"
+                            className="flex-1 py-3 rounded-xl font-bold text-slate-500 bg-gray-100 hover:bg-gray-200 transition-colors"
                         >
                             关闭
                         </button>
@@ -793,7 +890,7 @@ const App = () => {
         </div>
 
         {/* Bottom Nav */}
-        <nav className="fixed bottom-0 left-0 right-0 h-24 bg-white/90 backdrop-blur-xl border-t border-gray-100 flex justify-around items-start pt-4 px-6 z-30 max-w-md mx-auto pb-safe">
+        <nav className="fixed bottom-0 left-0 right-0 h-24 bg-white/90 backdrop-blur-xl border-t border-gray-100 flex justify-around items-start pt-4 px-6 z-30 max-w-md mx-auto pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
             <button 
                 onClick={() => setView('DASHBOARD')}
                 className={`flex flex-col items-center gap-1.5 transition-colors w-16 ${view === 'DASHBOARD' || view === 'SETTINGS' ? 'text-slate-900' : 'text-gray-300'}`}
