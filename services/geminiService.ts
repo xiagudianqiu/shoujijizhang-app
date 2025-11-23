@@ -1,9 +1,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TransactionType } from "../types";
 
+// Fix for TypeScript error: TS2591 Cannot find name 'process'
+declare const process: {
+  env: {
+    API_KEY: string;
+  }
+};
+
 // Helper to get the AI instance
 const getGenAI = () => {
   // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+  // Note: In Vite, this is replaced at build time by the 'define' config in vite.config.ts
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
