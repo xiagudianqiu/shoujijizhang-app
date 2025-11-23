@@ -165,10 +165,10 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
   const hasOperator = ['+', '-', '*', '/'].some(op => display.includes(op));
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.08)] pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+    <div className="flex flex-col h-full bg-white rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.08)] pb-[calc(env(safe-area-inset-bottom)+3.5rem)]">
       {/* Display Area */}
-      <div className="flex-1 flex flex-col justify-end items-end px-8 pb-4 pt-4 border-b border-gray-50 bg-white rounded-t-3xl">
-        <div className="text-gray-400 text-sm font-mono h-6 mb-1 opacity-70">
+      <div className="flex-1 flex flex-col justify-end items-end px-8 pb-3 pt-3 border-b border-gray-50 bg-white rounded-t-3xl">
+        <div className="text-gray-400 text-sm font-mono h-5 mb-1 opacity-70">
            {hasOperator ? `= ${centsToDecimal(currentResult)}` : ''}
         </div>
         <div className="flex items-baseline w-full justify-end gap-2 overflow-hidden">
@@ -182,13 +182,13 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onComplete, onCancel, onC
       </div>
 
       {/* Keypad Grid - Reduced gap and button height for better mobile fit */}
-      <div className="grid grid-cols-4 gap-2 px-4 pt-4 bg-gray-50/50">
+      <div className="grid grid-cols-4 gap-1.5 px-3 pt-3 bg-gray-50/50">
         {buttons.map((btn, idx) => (
           <button
             key={idx}
             onClick={btn.action}
             className={`
-              h-14 rounded-2xl flex items-center justify-center text-xl font-medium transition-all active:bg-gray-200 active:shadow-inner select-none
+              h-12 rounded-2xl flex items-center justify-center text-xl font-medium transition-all active:bg-gray-200 active:shadow-inner select-none
               ${btn.style || 'bg-white text-slate-800 shadow-sm border border-gray-100/50'}
             `}
           >

@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'smartledger-v2';
+const CACHE_NAME = 'smartledger-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

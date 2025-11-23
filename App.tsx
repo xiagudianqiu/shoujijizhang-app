@@ -388,31 +388,31 @@ const App = () => {
 
       return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex flex-col justify-end">
-          <div className="bg-white rounded-t-[2rem] max-h-[90dvh] h-full flex flex-col overflow-hidden animate-slide-up shadow-2xl">
-            <div className="pt-6 px-6 pb-2">
+          <div className="bg-white rounded-t-[2rem] max-h-[92dvh] h-full flex flex-col overflow-hidden animate-slide-up shadow-2xl">
+            <div className="pt-4 px-5 pb-2">
               {editingOcrIndex !== null && (
-                  <div className="mb-4 text-center">
-                      <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
+                  <div className="mb-2 text-center">
+                      <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold">
                           正在修改第 {editingOcrIndex + 1} 笔识别结果
                       </span>
                   </div>
               )}
               {isAddingToOcr && (
-                  <div className="mb-4 text-center">
-                      <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">
+                  <div className="mb-2 text-center">
+                      <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold">
                           添加到识别列表
                       </span>
                   </div>
               )}
               
-              <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
+              <div className="flex bg-gray-100 p-1 rounded-2xl mb-4">
                 <button 
                   onClick={() => {
                       setNewTxType(TransactionType.EXPENSE);
                       if(newTxType !== TransactionType.EXPENSE) setNewTxCategory(Category.FOOD);
                       setIsRefund(false);
                   }}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${newTxType === TransactionType.EXPENSE ? 'bg-white text-sl-expense shadow-sm scale-[0.98]' : 'text-gray-400'}`}
+                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${newTxType === TransactionType.EXPENSE ? 'bg-white text-sl-expense shadow-sm scale-[0.98]' : 'text-gray-400'}`}
                 >
                   支出
                 </button>
@@ -422,33 +422,33 @@ const App = () => {
                       if(newTxType !== TransactionType.INCOME) setNewTxCategory(Category.SALARY);
                       setIsRefund(false);
                   }}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${newTxType === TransactionType.INCOME ? 'bg-white text-sl-income shadow-sm scale-[0.98]' : 'text-gray-400'}`}
+                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${newTxType === TransactionType.INCOME ? 'bg-white text-sl-income shadow-sm scale-[0.98]' : 'text-gray-400'}`}
                 >
                   收入
                 </button>
               </div>
 
-              <div className="grid grid-cols-5 gap-y-4 gap-x-2 mb-4">
+              <div className="grid grid-cols-5 gap-y-3 gap-x-1 mb-3">
                   {categories.map(cat => (
                       <button 
                         key={cat}
                         onClick={() => setNewTxCategory(cat)}
-                        className={`flex flex-col items-center gap-2 transition-all duration-300 ${newTxCategory === cat ? 'opacity-100' : 'opacity-40 grayscale'}`}
+                        className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${newTxCategory === cat ? 'opacity-100' : 'opacity-40 grayscale'}`}
                       >
                           <div className={`
-                            w-12 h-12 rounded-[18px] flex items-center justify-center text-xl transition-transform
+                            w-11 h-11 rounded-[16px] flex items-center justify-center text-lg transition-transform
                             ${newTxCategory === cat ? (newTxType === TransactionType.EXPENSE ? 'bg-sl-expense text-white scale-110 shadow-lg shadow-sl-expense/30' : 'bg-sl-income text-white scale-110 shadow-lg shadow-sl-income/30') : 'bg-gray-100 border border-gray-100'}
                           `}>
                               {CategoryLabels[cat][0]} 
                           </div>
-                          <span className={`text-[11px] font-medium tracking-wide ${newTxCategory === cat ? 'text-slate-800' : 'text-gray-400'}`}>
+                          <span className={`text-[10px] font-medium tracking-wide ${newTxCategory === cat ? 'text-slate-800' : 'text-gray-400'}`}>
                               {CategoryLabels[cat]}
                           </span>
                       </button>
                   ))}
               </div>
               
-              <div className="mb-3 px-1">
+              <div className="mb-2 px-1">
                    <input 
                       type="text" 
                       value={newTxNote}
@@ -458,7 +458,7 @@ const App = () => {
                    />
               </div>
 
-              <div className="mb-2 px-1 flex items-center gap-2">
+              <div className="mb-1 px-1 flex items-center gap-2">
                  <input 
                     type="datetime-local" 
                     ref={dateInputRef}
@@ -486,25 +486,25 @@ const App = () => {
             </div>
 
             {newTxType === TransactionType.EXPENSE && (
-                <div className="px-6 mb-2 flex items-center gap-3">
+                <div className="px-6 mb-2 flex items-center gap-2">
                     <button 
                         onClick={() => setIsReimbursable(!isReimbursable)}
                         className={`
-                            flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all active:scale-95
+                            flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all active:scale-95
                             ${isReimbursable ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'border-gray-100 bg-gray-50 text-gray-400'}
                         `}
                     >
-                        <CheckSquare size={14} strokeWidth={3} />
+                        <CheckSquare size={12} strokeWidth={3} />
                         报销/垫付
                     </button>
                     <button 
                         onClick={() => setIsRefund(!isRefund)}
                         className={`
-                            flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all active:scale-95
+                            flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all active:scale-95
                             ${isRefund ? 'bg-red-50 border-red-200 text-red-600' : 'border-gray-100 bg-gray-50 text-gray-400'}
                         `}
                     >
-                        <RefreshCw size={14} strokeWidth={3} />
+                        <RefreshCw size={12} strokeWidth={3} />
                         退款
                     </button>
                 </div>
@@ -531,9 +531,9 @@ const App = () => {
                   setIsAddingToOcr(false);
                   setView('DASHBOARD');
               }} 
-              className="absolute top-5 right-5 p-2 bg-gray-100 rounded-full text-gray-400 hover:bg-gray-200 active:scale-90 transition-all"
+              className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full text-gray-400 hover:bg-gray-200 active:scale-90 transition-all"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -785,7 +785,7 @@ const App = () => {
 
                     <div className="mb-6 text-center">
                          <p className="text-sm text-gray-500 font-medium">SmartLedger Pro</p>
-                         <p className="text-xs text-gray-300 mt-1">Version 2.1.0</p>
+                         <p className="text-xs text-gray-300 mt-1">Version 2.2.0</p>
                     </div>
 
                     <div className="flex gap-3">
@@ -820,7 +820,7 @@ const App = () => {
                    <h1 className="font-bold text-slate-900 text-lg leading-tight tracking-tight">SmartLedger</h1>
                    <div className="flex items-center gap-2">
                        <p className="text-[10px] text-gray-400 font-mono tracking-widest uppercase font-bold">PRO VERSION</p>
-                       <span className="text-[10px] bg-red-500 text-white px-1.5 rounded-sm font-bold font-mono">v2.1</span>
+                       <span className="text-[10px] bg-red-500 text-white px-1.5 rounded-sm font-bold font-mono">v2.2</span>
                    </div>
                </div>
              </div>
